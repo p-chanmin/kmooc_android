@@ -31,5 +31,41 @@ class KmoocDetailActivity : AppCompatActivity() {
 
         binding = ActivityKmookDetailBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        val courseId = intent.getStringExtra(INTENT_PARAM_COURSE_ID)
+        if (courseId == null || courseId.isEmpty()) {
+            finish()
+            return
+        }
+
+        binding.toolbar.setNavigationOnClickListener { finish() }
+
+        viewModel.lecture.observe(this, this::setDetailInfo)
+        viewModel.progressVisible.observe(this) { visible ->
+            binding.progressBar.visibility = visible.toVisibility()
+        }
+
+        viewModel.detail(courseId)
+    }
+    private fun setDetailInfo(lecture: Lecture) {
+        binding.toolbar.title = lecture.name
+        ImageLoader.loadImage(lecture.courseImageLarge) { binding.lectureImage.setImageBitmap(it) }
+        binding.lectureNumber.setDescription("• 강좌번호 :", lecture.number)
+        binding.lectureType.setDescription(
+            "• 강좌분류 :",
+            "${lecture.classfyName} (${lecture.middleClassfyName})"
+        )
+        binding.lectureOrg.setDescription("• 운영기관 :", lecture.orgName)
+
+        binding.lectureTeachers.setDescription("• 교수정보 :", lecture.teachers ?: "")
+        binding.lectureTeachers.visibility = (lecture.teachers?.isEmpty() == false).toVisibility()
+
+        binding.lectureDue.setDescription(
+            "• 운영기간 :",
+            DateUtil.dueString(lecture.start, lecture.end)
+        )
+
+        binding.webView.loadData(lecture.overview ?: "", "text/html", "UTF-8")
+        binding.webView.visibility = (lecture.overview?.isEmpty() == false).toVisibility()
     }
 }

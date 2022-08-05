@@ -1,14 +1,22 @@
 package com.programmers.kmooc.viewmodels
 
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.programmers.kmooc.models.Lecture
 import com.programmers.kmooc.repositories.KmoocRepository
 
 
 class KmoocDetailViewModel(private val repository: KmoocRepository) : ViewModel() {
 
+    var progressVisible = MutableLiveData<Boolean>()
+    var lecture = MutableLiveData<Lecture>()
+
     fun detail(courseId: String) {
-        repository.detail(courseId) { lecture ->
+        progressVisible.postValue(true)
+        repository.detail(courseId) {
+            progressVisible.postValue(false)
+            this.lecture.postValue(it)
         }
     }
 }

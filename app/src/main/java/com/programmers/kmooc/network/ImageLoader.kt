@@ -10,7 +10,33 @@ import java.lang.Exception
 import java.net.URL
 
 object ImageLoader {
+
+    private val imageCache = mutableMapOf<String, Bitmap>()
+
     fun loadImage(url: String, completed: (Bitmap?) -> Unit) {
-        //TODO: String -> Bitmap 을 구현하세요
+        if (url.isEmpty()) {
+            completed(null)
+            return
+        }
+
+        if (imageCache.containsKey(url)) {
+            completed(imageCache[url])
+            return
+        }
+
+        GlobalScope.launch(Dispatchers.IO) {
+            try {
+                val bitmap = BitmapFactory.decodeStream(URL(url).openStream())
+                imageCache[url] = bitmap
+
+                withContext(Dispatchers.Main) {
+                    completed(bitmap)
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    completed(null)
+                }
+            }
+        }
     }
 }

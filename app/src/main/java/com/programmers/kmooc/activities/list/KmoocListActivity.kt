@@ -33,7 +33,44 @@ class KmoocListActivity : AppCompatActivity() {
         val adapter = LecturesAdapter()
             .apply { onClick = this@KmoocListActivity::startDetailActivity }
 
+        // 리사이클러 뷰 갱신
         binding.lectureList.adapter = adapter
+        viewModel.lectureList.observe(this) { lectureList ->
+            adapter.updateLectures(lectureList.lectures)
+            binding.pullToRefresh.isRefreshing = false
+        }
+
+        // 아래로 당겨서 리프래쉬
+        binding.pullToRefresh.setOnRefreshListener {
+            viewModel.list()
+        }
+
+        viewModel.progressVisible.observe(this) { visible ->
+            binding.progressBar.visibility = visible.toVisibility()
+        }
+
+
+
+        // 무한 스크롤
+        binding.lectureList.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(recyclerView, dx, dy)
+
+                val layoutManager = binding.lectureList.layoutManager
+
+                // hasNextPage() -> 다음 페이지가 있는 경우
+                if (viewModel.progressVisible.value != true) {
+                    val lastVisibleItem = (layoutManager as LinearLayoutManager)
+                        .findLastCompletelyVisibleItemPosition()
+
+                    // 마지막으로 보여진 아이템 position 이
+                    // 전체 아이템 개수보다 5개 모자란 경우, 데이터를 loadMore 한다
+                    if (layoutManager.itemCount <= lastVisibleItem + 5) {
+                        viewModel.next()
+                    }
+                }
+            }
+        })
 
         viewModel.list()
     }

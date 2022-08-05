@@ -9,14 +9,27 @@ import java.util.Collections.addAll
 
 class KmoocListViewModel(private val repository: KmoocRepository) : ViewModel() {
 
+    var progressVisible = MutableLiveData<Boolean>()
+    var lectureList = MutableLiveData<LectureList>()
+
     fun list() {
-        repository.list { lectureList ->
+        progressVisible.postValue(true)
+        repository.list {
+            progressVisible.postValue(false)
+            this.lectureList.postValue(it)
         }
     }
 
     fun next() {
-        val currentLectureList = LectureList.EMPTY
+        progressVisible.postValue(true)
+        val currentLectureList = this.lectureList.value ?: return
         repository.next(currentLectureList) { lectureList ->
+            val currentLectures = currentLectureList.lectures
+            val mergedLectures = currentLectures.toMutableList()
+                .apply { addAll(lectureList.lectures) }
+            lectureList.lectures = mergedLectures // 새로 받아온 페이징 정보 + 머지 데이터 대입
+            this.lectureList.postValue(lectureList)
+            progressVisible.postValue(false)
         }
     }
 }
